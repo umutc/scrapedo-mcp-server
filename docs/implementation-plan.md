@@ -100,7 +100,7 @@ interface ScrapedoProxyParams {
   super?: boolean;
   geoCode?: GeoCode;
   regionalGeoCode?: RegionalCode;
-  sessionId?: number;
+  sessionId?: number; // 0..1_000_000, auto-closes after 5 minutes idle
 }
 
 interface ScrapedoHeaderParams {
@@ -120,6 +120,7 @@ interface ScrapedoBrowserParams {
   width?: number;  // default: 1920
   height?: number; // default: 1080
   blockResources?: boolean; // default: true
+  blockAds?: boolean; // default: false
 }
 
 interface ScrapedoScreenshotParams {
@@ -159,6 +160,49 @@ interface PlayWithBrowserParams {
 }
 ```
 
+2b. **Response Shapes** (`src/types/responses.ts`)
+```typescript
+export interface ResponseMetadata {
+  requestedUrl: string;
+  finalUrl?: string;
+  redirected?: boolean;
+  creditsEstimated?: number;
+  creditsBilled?: number;
+  proxyType?: 'datacenter' | 'residential' | 'mobile';
+  geo?: string; // geoCode or regionalGeoCode
+  timingMs?: number;
+}
+
+export interface ScrapedoResponse {
+  statusCode: number;
+  headers: Record<string, string>;
+  contentType?: string;
+  // Use exactly one of the following depending on response
+  bodyText?: string;              // text/html, application/json, markdown
+  bodyBinaryBase64?: string;      // images/screenshots
+  networkJSON?: any;              // when returnJSON=true
+  metadata?: ResponseMetadata;
+}
+
+export interface ScreenshotResult {
+  imageBase64: string;
+  format: 'png' | 'jpeg';
+  fullPage?: boolean;
+  selector?: string;
+}
+
+export interface NetworkRequest {
+  url: string;
+  method: string;
+  status?: number;
+  requestHeaders?: Record<string, string>;
+  responseHeaders?: Record<string, string>;
+  startedAt?: string; // ISO time
+  endedAt?: string;   // ISO time
+  bodySize?: number;
+}
+```
+
 3. **Configuration** (`src/config.ts`)
 ```typescript
 export const config = {
@@ -171,6 +215,8 @@ export const config = {
   maxRetries: 3
 };
 ```
+
+Note: Pin library versions before implementation to avoid breaking changes (avoid `latest`).
 
 ---
 
@@ -202,14 +248,40 @@ class ScrapedoClient {
 }
 ```
 
+#### MCP Tool Output Envelope
+All tools return a consistent envelope for easy consumption by MCP clients.
+```typescript
+type ToolSuccess = { ok: true; result: ScrapedoResponse };
+type ToolFailure = { ok: false; error: { message: string; statusCode?: number; type?: string } };
+export type ToolResult = ToolSuccess | ToolFailure;
+```
+
+Transparent response handling:
+- When `transparentResponse=true`, do not interpret or transform status codes or bodies; pass through the target response. Credits may still be consumed for certain non-2xx (e.g., 404). Include raw headers where possible.
+
+Proxy Mode note (agent setup example):
+```typescript
+// Build `password` part from parameters, e.g. 'render=true&waitUntil=domcontentloaded'
+const paramStr = new URLSearchParams(proxyParams).toString();
+const proxyAuth = `${token}:${paramStr}`;
+const proxyUrl = `http://${proxyAuth}@${config.proxyUrl}:${config.proxyPort}`;
+
+// With http(s)-proxy-agent (or similar)
+const httpsAgent = new (require('https-proxy-agent'))(proxyUrl);
+const req: AxiosRequestConfig = { url, method: 'GET', httpsAgent, proxy: false };
+```
+
 #### Credit Cost Logic
 ```typescript
 function calculateCredits(params: ScrapedoParams): number {
   const domain = extractDomain(params.url);
-  let credits = 1; // Base datacenter
-  
-  if (params.super) credits = 10; // Residential/Mobile
-  if (params.render) credits *= 5; // Browser rendering
+  // Explicit branching to match Scrape.do pricing exactly
+  // Datacenter: 1, Datacenter+Browser: 5, Residential/Mobile: 10, Residential/Mobile+Browser: 25
+  let credits: number;
+  if (params.super && params.render) credits = 25;
+  else if (params.super) credits = 10;
+  else if (params.render) credits = 5;
+  else credits = 1;
   
   // Special domain pricing
   if (domain.includes('google.')) credits = Math.max(credits, 10);
@@ -305,18 +377,26 @@ function calculateCredits(params: ScrapedoParams): number {
 Implementation converts user-friendly actions to Scrapedo's playWithBrowser format:
 ```typescript
 function convertActions(actions: UserAction[]): BrowserAction[] {
-  return actions.map(action => {
+  const toJSString = (s: string) => JSON.stringify(String(s));
+  return actions.flatMap(action => {
     switch(action.action) {
-      case 'click': return { Action: 'Click', Selector: action.selector };
-      case 'type': return [
-        { Action: 'Click', Selector: action.selector },
-        { Action: 'Execute', Execute: `document.querySelector('${action.selector}').value='${action.value}'` }
-      ];
-      case 'wait': return { Action: 'Wait', Timeout: action.timeout };
-      case 'scroll': return { Action: 'ScrollY', Value: action.value };
+      case 'click':
+        return { Action: 'Click', Selector: action.selector };
+      case 'type': {
+        const selector = toJSString(action.selector);
+        const value = toJSString(String(action.value ?? ''));
+        return [
+          { Action: 'Click', Selector: action.selector },
+          { Action: 'Execute', Execute: `(() => { const el = document.querySelector(${selector}); if (!el) return; el.focus(); el.value = ${value}; el.dispatchEvent(new Event('input', { bubbles: true })); el.dispatchEvent(new Event('change', { bubbles: true })); })();` }
+        ];
+      }
+      case 'wait':
+        return { Action: 'Wait', Timeout: action.timeout };
+      case 'scroll':
+        return { Action: 'ScrollY', Value: Number(action.value) };
       // ... more conversions
     }
-  }).flat();
+  });
 }
 ```
 
@@ -332,6 +412,9 @@ function convertActions(actions: UserAction[]): BrowserAction[] {
       url: { type: 'string' },
       fullPage: { type: 'boolean', description: 'Capture full page' },
       selector: { type: 'string', description: 'Specific element to capture' },
+      // Scrape.do requires both of these for any screenshot feature
+      render: { type: 'boolean', const: true },
+      returnJSON: { type: 'boolean', const: true },
       viewport: {
         type: 'object',
         properties: {
@@ -343,6 +426,7 @@ function convertActions(actions: UserAction[]): BrowserAction[] {
     required: ['url']
   }
 }
+// Handler must coerce `blockResources=false` for correctness per Scrape.do docs.
 ```
 
 ---
@@ -382,13 +466,16 @@ function convertActions(actions: UserAction[]): BrowserAction[] {
     type: 'object',
     properties: {
       url: { type: 'string' },
-      country: { type: 'string', description: 'Country code (us, uk, etc.)' },
-      region: { 
+      geoCode: { type: 'string', description: 'Country code (us, uk, etc.)' },
+      regionalGeoCode: { 
         type: 'string',
         enum: ['europe', 'asia', 'africa', 'oceania', 'northamerica', 'southamerica']
       }
     },
-    required: ['url', 'country']
+    oneOf: [
+      { required: ['url', 'geoCode'] },
+      { required: ['url', 'regionalGeoCode'] }
+    ]
   }
 }
 ```
@@ -410,11 +497,9 @@ function convertActions(actions: UserAction[]): BrowserAction[] {
       url: { type: 'string' },
       headers: { type: 'object', description: 'Custom headers to send' },
       userAgent: { type: 'string' },
-      mode: { 
-        type: 'string',
-        enum: ['custom', 'extra', 'forward'],
-        description: 'customHeaders, extraHeaders, or forwardHeaders'
-      }
+      customHeaders: { type: 'boolean', default: false },
+      extraHeaders: { type: 'boolean', default: false },
+      forwardHeaders: { type: 'boolean', default: false }
     },
     required: ['url', 'headers']
   }
@@ -577,6 +662,23 @@ async function handler(): Promise<UsageStats> {
 }
 ```
 
+#### Tool: generate_proxy_config
+**File**: `src/tools/utility/generate-proxy-config.ts`
+```typescript
+{
+  name: 'generate_proxy_config',
+  description: 'Return a ready-to-use Proxy Mode URL with embedded parameters',
+  inputSchema: {
+    type: 'object',
+    properties: {
+      params: { type: 'object', description: 'Scrape.do parameters for proxy password' }
+    }
+  }
+}
+
+// Returns: { proxyUrl: string }
+```
+
 ---
 
 ### Track 10: Error Handling & Utilities
@@ -587,7 +689,7 @@ async function handler(): Promise<UsageStats> {
 class ScrapedoError extends Error {
   constructor(
     public statusCode: number,
-    public errorType: 'rate_limit' | 'auth' | 'timeout' | 'target_error' | 'unknown',
+    public errorType: 'rate_limit' | 'auth' | 'timeout' | 'client_canceled' | 'target_error' | 'unknown',
     public consumedCredits: boolean,
     public retryable: boolean,
     public details?: any
@@ -598,12 +700,16 @@ class ScrapedoError extends Error {
 
 function handleScrapedoError(error: AxiosError): never {
   const status = error.response?.status;
+  const retryAfter = error.response?.headers?.['retry-after'];
   
   switch(status) {
     case 429:
-      throw new ScrapedoError(429, 'rate_limit', false, true);
+      throw new ScrapedoError(429, 'rate_limit', false, true, { retryAfter });
     case 401:
       throw new ScrapedoError(401, 'auth', false, false);
+    case 404:
+      // Target not found consumes credits; not retryable
+      throw new ScrapedoError(404, 'target_error', true, false);
     case 400:
       // Check if Scrape.do error or target error
       const isScrapedoError = error.response?.data?.includes('Scrape.do');
@@ -611,11 +717,14 @@ function handleScrapedoError(error: AxiosError): never {
     case 502:
       throw new ScrapedoError(502, 'unknown', false, true);
     case 510:
-      throw new ScrapedoError(510, 'timeout', false, false);
+      throw new ScrapedoError(510, 'client_canceled', false, false);
     default:
       throw new ScrapedoError(status || 500, 'unknown', true, false);
   }
 }
+
+// Note: transport-level timeouts (e.g., ECONNABORTED) should be mapped by caller to:
+// throw new ScrapedoError(0, 'timeout', false, true)
 ```
 
 #### Module: Rate Limiter (`src/utils/rate-limiter.ts`)
@@ -643,6 +752,10 @@ class RateLimiter {
 }
 ```
 
+Notes:
+- Respect `Retry-After` headers on 429 responses and apply jittered backoff.
+- Add a token-scoped concurrency gate to stay within the account's concurrent request limits; queue excess work and release permits on completion.
+
 ---
 
 ### Track 11: Testing Infrastructure
@@ -669,6 +782,16 @@ describe('scrape tool', () => {
     await expect(scrape({ url: 'https://example.com' }))
       .rejects.toThrow(ScrapedoError);
   });
+  
+  it('should enforce screenshot deps', async () => {
+    await expect(take_screenshot({ url: 'https://example.com' }))
+      .rejects.toThrow(/render=true and returnJSON=true/);
+  });
+  
+  it('should map 510 as client_canceled', () => {
+    const err = new ScrapedoError(510, 'client_canceled', false, false);
+    expect(err.errorType).toBe('client_canceled');
+  });
 });
 ```
 
@@ -685,7 +808,7 @@ describe('scrape tool', () => {
 \`\`\`bash
 npm install
 cp .env.example .env
-# Add your token: SCRAPEDO_API_TOKEN=REDACTED_API_KEY
+# Add your token: SCRAPEDO_API_TOKEN=YOUR_TOKEN_HERE
 \`\`\`
 
 ## Available Tools
@@ -712,6 +835,12 @@ cp .env.example .env
 - With JS rendering: 5 credits
 - Residential proxy: 10 credits
 - Residential + JS: 25 credits
+
+### Proxy Mode Defaults
+- Proxy Mode enables `customHeaders=true` by default per Scrape.do docs. Explicitly pass `customHeaders=false` to disable.
+
+### Cookies
+- `setCookies` accepts URL-encoded cookies. The `scrape_with_cookies` tool converts `{k:v}` to the required header string and can set `pureCookies=true` to return original `Set-Cookie` headers.
 ```
 
 ---
@@ -743,6 +872,7 @@ cp .env.example .env
 - [ ] waitSelector
 - [ ] width/height
 - [ ] blockResources
+- [ ] blockAds
 
 ### Screenshot Parameters ✓
 - [ ] screenShot
@@ -808,3 +938,7 @@ cp .env.example .env
 - Complete documentation with examples
 - Support for both API and Proxy modes
 - Rate limiting compliance
+
+## Notes on Proxy Mode Implementation
+- For Proxy Mode (`TOKEN:params@proxy.scrape.do:8080`), configure an HTTP/HTTPS proxy agent (e.g., `http-proxy-agent`/`https-proxy-agent`) instead of relying on axios defaults. Build the proxy password string from Scrape.do parameters (e.g., `render=true&waitUntil=domcontentloaded`).
+- If full in-process proxying is out of scope for the MCP server, expose a `generate_proxy_config` utility tool that returns a ready-to-use proxy URL for clients.

@@ -11,7 +11,7 @@ This document verifies that ALL features from https://scrape.do/documentation/ a
 
 ### Authentication
 - [x] **Token**: Required parameter, environment variable `SCRAPEDO_API_TOKEN`
-- [x] **Test Token**: `REDACTED_API_KEY`
+- [x] **Example Token**: Placeholder only (use `YOUR_TOKEN_HERE` in docs)
 
 ## ✅ Request Parameters
 
@@ -47,6 +47,8 @@ This document verifies that ALL features from https://scrape.do/documentation/ a
 - [x] `screenShot` - Return screenshot (default: false)
 - [x] `fullScreenShot` - Full page screenshot (default: false)
 - [x] `particularScreenShot` - Specific element screenshot
+  
+  Note: All screenshot features require `render=true` and `returnJSON=true`.
 
 ### Request Control
 - [x] `disableRedirection` - Disable redirects (default: false)
