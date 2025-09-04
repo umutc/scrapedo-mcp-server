@@ -1,155 +1,68 @@
 # Scrapedo MCP Server
 
-[![MCP](https://img.shields.io/badge/MCP-1.0.0-blue)](https://modelcontextprotocol.io)
-[![TypeScript](https://img.shields.io/badge/TypeScript-5.0-blue)](https://www.typescriptlang.org/)
+[![npm version](https://img.shields.io/npm/v/scrapedo-mcp-server)](https://www.npmjs.com/package/scrapedo-mcp-server)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
+[![MCP Version](https://img.shields.io/badge/MCP-1.0.0-green)](https://modelcontextprotocol.io)
 
-A comprehensive MCP (Model Context Protocol) server that provides web scraping capabilities through the [Scrapedo API](https://scrape.do). This server enables Claude Desktop and other MCP clients to perform advanced web scraping operations with proxy support, JavaScript rendering, and intelligent content extraction.
+Enable Claude Desktop to scrape websites using the Scrapedo API. Simple setup, powerful features.
 
-## 🌟 Features
+## What is this?
 
-### Core Capabilities
-- **🌐 Web Scraping**: Basic HTTP requests and JavaScript-rendered page scraping
-- **🔒 Proxy Support**: Datacenter and residential/mobile proxy networks with geo-targeting
-- **📸 Screenshots**: Capture full page or element-specific screenshots
-- **📝 Output Formats**: HTML, text, or markdown output
-- **🤖 Browser Automation**: Click, scroll, type, and execute JavaScript
-- **📊 Usage Monitoring**: Track API credits and usage statistics
-- **💰 Credit Calculation**: Automatic credit cost calculation for requests
+This is an MCP (Model Context Protocol) server that gives Claude Desktop the ability to:
+- Scrape any website (with or without JavaScript)
+- Take screenshots
+- Use proxies from different countries
+- Convert web pages to markdown
 
-### Advanced Features
-- **🔄 Retry Logic**: Automatic retry with exponential backoff for failed requests
-- **🛡️ Error Handling**: Comprehensive error handling with detailed logging
-- **🌍 Geo-targeting**: Select proxy locations by country or city
-- **🍪 Cookie Management**: Handle cookies and sessions
-- **📱 Device Emulation**: Desktop, mobile, and tablet user agents
-- **⏰ Wait Conditions**: Wait for selectors, navigation, or network idle
-- **🚫 Resource Blocking**: Block images, CSS, fonts for faster scraping
+## Quick Start (2 minutes)
 
-## 📦 Installation
+### 1. Get your Scrapedo API key
+Sign up at [scrape.do](https://scrape.do) to get your free API key.
 
-### Prerequisites
-- Node.js 18+ 
-- npm or yarn
-- Scrapedo API key ([Get one here](https://scrape.do))
+### 2. Setup Claude Desktop
 
-### Quick Start with npx (Recommended)
-
-The easiest way to use this MCP server is with npx:
-
+Run this command:
 ```bash
-# Initialize Claude Desktop configuration
 npx scrapedo-mcp-server init
-
-# Or manually start the server
-SCRAPEDO_API_KEY="your_api_key_here" npx scrapedo-mcp-server start
 ```
 
-### Install from npm
+That's it! The tool will automatically configure Claude Desktop for you.
+
+### 3. Start using it in Claude
+
+Just ask Claude to scrape any website:
+```
+"Can you scrape the latest news from https://example.com?"
+"Take a screenshot of the Google homepage"
+"Get the product prices from this e-commerce site using a US proxy"
+```
+
+## Manual Installation Options
+
+<details>
+<summary>Install globally with npm</summary>
 
 ```bash
-# Install globally
 npm install -g scrapedo-mcp-server
-
-# Initialize configuration
 scrapedo-mcp init
-
-# Start the server
-SCRAPEDO_API_KEY="your_api_key_here" scrapedo-mcp start
 ```
+</details>
 
-### Install from Source
+<details>
+<summary>Install from source</summary>
 
 ```bash
-# Clone the repository
 git clone https://github.com/umutc/scrapedo-mcp-server.git
 cd scrapedo-mcp-server
-
-# Install dependencies
 npm install
-
-# Build the TypeScript code
 npm run build
-
-# Set your API key
-export SCRAPEDO_API_KEY="your_api_key_here"
-
-# Test the server
-npm test
 ```
+</details>
 
-## ⚙️ Configuration
+<details>
+<summary>Manual Claude Desktop configuration</summary>
 
-### Environment Variables
-
-| Variable | Description | Default | Required |
-|----------|-------------|---------|----------|
-| `SCRAPEDO_API_KEY` | Your Scrapedo API token | - | ✅ |
-| `LOG_LEVEL` | Logging level (DEBUG, INFO, WARN, ERROR) | INFO | ❌ |
-| `NODE_ENV` | Environment (development, production) | development | ❌ |
-
-### API Key Setup
-
-1. **Get your API key**: Sign up at [scrape.do](https://scrape.do) 
-2. **Set the environment variable**:
-   ```bash
-   export SCRAPEDO_API_KEY="your_api_key_here"
-   ```
-3. **Or use a `.env` file** (for development):
-   ```bash
-   echo "SCRAPEDO_API_KEY=your_api_key_here" > .env
-   ```
-
-### 📝 Logging Configuration
-
-The server includes comprehensive logging for debugging and monitoring:
-
-```bash
-# Set log level
-export LOG_LEVEL="DEBUG"  # DEBUG | INFO | WARN | ERROR
-
-# Logs are automatically saved to: logs/scrapedo-mcp.log
-```
-
-#### Log Levels
-| Level | Description | Use Case |
-|-------|-------------|----------|
-| `DEBUG` | All logs including API calls and responses | Development & troubleshooting |
-| `INFO` | General information and tool responses | Production monitoring |
-| `WARN` | Warnings and potential issues | Issue detection |
-| `ERROR` | Errors only | Critical issues |
-
-#### Log Features
-- ✅ Automatic API token masking in logs
-- ✅ Request/response tracking with timing
-- ✅ Error stack traces for debugging
-- ✅ Tool usage analytics
-- ✅ Rotating log files in `logs/` directory
-- ✅ Structured JSON logging for parsing
-
-## 🤖 Usage with Claude Desktop
-
-### Automatic Configuration (Recommended)
-
-Use the CLI tool to automatically configure Claude Desktop:
-
-```bash
-# Using npx (no installation required)
-npx scrapedo-mcp-server init
-
-# Or if installed globally
-scrapedo-mcp init
-```
-
-This will:
-1. Detect your Claude Desktop configuration file
-2. Add the Scrapedo MCP server configuration
-3. Prompt you to add your API key
-
-### Manual Configuration
-
-#### macOS Configuration
-**File location**: `~/Library/Application Support/Claude/claude_desktop_config.json`
+Add to `~/Library/Application Support/Claude/claude_desktop_config.json`:
 
 ```json
 {
@@ -158,218 +71,124 @@ This will:
       "command": "npx",
       "args": ["scrapedo-mcp-server", "start"],
       "env": {
-        "SCRAPEDO_API_KEY": "your_api_key_here",
-        "LOG_LEVEL": "INFO"
+        "SCRAPEDO_API_KEY": "your_api_key_here"
       }
     }
   }
 }
 ```
+</details>
 
-#### Windows Configuration
-**File location**: `%APPDATA%\Claude\claude_desktop_config.json`
+## What Can It Do?
 
-```json
-{
-  "mcpServers": {
-    "scrapedo": {
-      "command": "npx",
-      "args": ["scrapedo-mcp-server", "start"],
-      "env": {
-        "SCRAPEDO_API_KEY": "your_api_key_here",
-        "LOG_LEVEL": "INFO"
-      }
-    }
-  }
-}
-```
-
-After updating the configuration, restart Claude Desktop for the changes to take effect.
-
-### CLI Commands
-
-```bash
-# Initialize Claude Desktop configuration
-npx scrapedo-mcp-server init
-
-# Show current configuration
-npx scrapedo-mcp-server config
-
-# Start server manually (for testing)
-SCRAPEDO_API_KEY="your_key" npx scrapedo-mcp-server start
-
-# Show help
-npx scrapedo-mcp-server help
-```
-
-## 🛠️ Available Tools
-
-### Core Scraping Tools
-
-| Tool | Description | Credit Cost |
-|------|-------------|-------------|
-| `scrape` | Basic web scraping without JavaScript rendering | 1 credit |
-| `scrape_with_js` | Scrape JavaScript-rendered pages with headless browser | 5 credits |
-| `scrape_with_proxy` | Use residential/mobile proxies with geographic targeting | 10-25 credits |
-| `take_screenshot` | Capture webpage screenshots (full page or specific elements) | 5 credits |
-| `scrape_to_markdown` | Convert webpages to markdown format | 1-5 credits |
-
-### Utility Tools
-
-| Tool | Description | Credit Cost |
-|------|-------------|-------------|
-| `get_usage_stats` | Check remaining credits and API usage | 0 credits |
-| `generate_proxy_config` | Generate proxy configuration URLs for external use | 0 credits |
-
-## Example Usage
-
-### Basic Scraping
-
+### Basic Web Scraping
 ```javascript
-// Simple webpage scraping
-{
-  "tool": "scrape",
-  "arguments": {
-    "url": "https://example.com",
-    "device": "desktop"
-  }
-}
+// Claude can now do this:
+scrape("https://example.com")
 ```
 
 ### JavaScript-Rendered Pages
-
 ```javascript
-// Scrape with JavaScript rendering
-{
-  "tool": "scrape_with_js",
-  "arguments": {
-    "url": "https://example.com",
-    "waitUntil": "networkidle0",
-    "waitSelector": ".content-loaded",
-    "blockResources": false,
-    "width": 1920,
-    "height": 1080
-  }
-}
+// For modern SPAs and dynamic content:
+scrape_with_js("https://app.example.com", {
+  waitSelector: ".content-loaded"
+})
 ```
 
-### Using Proxies
-
+### Screenshots
 ```javascript
-// Scrape with residential proxy from specific location
-{
-  "tool": "scrape_with_proxy",
-  "arguments": {
-    "url": "https://example.com",
-    "geoCode": "us",
-    "sessionId": 123456,
-    "render": true
-  }
-}
+// Capture any webpage:
+take_screenshot("https://example.com", {
+  fullPage: true
+})
 ```
 
-### Taking Screenshots
-
+### Use Proxies
 ```javascript
-// Capture full page screenshot
-{
-  "tool": "take_screenshot",
-  "arguments": {
-    "url": "https://example.com",
-    "fullPage": true,
-    "device": "mobile"
-  }
-}
+// Scrape from different locations:
+scrape_with_proxy("https://example.com", {
+  geoCode: "us"  // Use US proxy
+})
 ```
 
 ### Convert to Markdown
-
 ```javascript
-// Get webpage content as markdown
-{
-  "tool": "scrape_to_markdown",
-  "arguments": {
-    "url": "https://example.com",
-    "render": true
-  }
-}
+// Get clean, readable content:
+scrape_to_markdown("https://blog.example.com/article")
 ```
 
-## Credit Costs
+## Project Structure
 
-- **Basic request**: 1 credit
-- **With JavaScript rendering**: 5 credits  
-- **Residential/mobile proxy**: 10 credits
-- **Residential/mobile + JavaScript**: 25 credits
-- **Special domains**: Google (min 10), LinkedIn (min 30)
-
-## API Modes
-
-### API Mode (Default)
-Direct API calls using GET requests with parameters in the URL.
-
-### Proxy Mode
-Route requests through Scrapedo's proxy servers for enhanced compatibility.
-
-## Development
-
-```bash
-# Install dependencies
-npm install
-
-# Build TypeScript
-npm run build
-
-# Run in development mode
-npm run dev
-
-# Test the implementation
-node test-final.js
+```
+scrapedo-mcp-server/
+├── src/              # TypeScript source code
+│   ├── index.ts      # MCP server entry point
+│   ├── cli.ts        # CLI tool for setup
+│   └── tools/        # Scraping tool implementations
+├── dist/             # Compiled JavaScript (generated)
+├── package.json      # Project configuration
+└── README.md         # You are here
 ```
 
-## 🔧 Troubleshooting
+## API Costs
 
-### Common Issues
+Scrapedo uses a credit system:
+- **Basic scraping**: 1 credit
+- **JavaScript rendering**: 5 credits
+- **Residential proxy**: 10 credits
+- **Residential + JS**: 25 credits
+
+Check your usage anytime by asking Claude: "Check my Scrapedo usage stats"
+
+## Common Use Cases
+
+- **Price Monitoring**: Track product prices across e-commerce sites
+- **News Aggregation**: Collect articles from multiple sources
+- **Data Research**: Gather public information for analysis
+- **Content Migration**: Export content from websites
+- **SEO Analysis**: Check how pages render for search engines
+- **Competitive Analysis**: Monitor competitor websites
+
+## FAQ
+
+**Q: Do I need to install anything?**  
+A: Just Node.js 18+. Everything else is handled by npx.
+
+**Q: How do I update?**  
+A: Run `npx scrapedo-mcp-server@latest init` to get the newest version.
+
+**Q: Is this free?**  
+A: The MCP server is free. Scrapedo offers a free tier with limited credits.
+
+**Q: Can I use this with other MCP clients?**  
+A: Yes! This works with any MCP-compatible client, not just Claude Desktop.
+
+**Q: How do I see debug logs?**  
+A: Set `LOG_LEVEL=DEBUG` in your environment or configuration.
+
+## Troubleshooting
 
 | Issue | Solution |
 |-------|----------|
-| **401 Unauthorized** | Check that your API key is valid and properly set |
-| **429 Too Many Requests** | Rate limit exceeded, wait and retry |
-| **Insufficient Credits** | Use `get_usage_stats` to check remaining credits |
-| **Proxy Connection Failed** | Ensure you have the https-proxy-agent package installed |
-| **Tool Not Found** | Restart Claude Desktop after configuration changes |
-| **Empty Response** | Check if the site requires JavaScript rendering |
-| **Timeout Errors** | Increase timeout or use simpler selectors |
+| "Tool not found" | Restart Claude Desktop |
+| "401 Unauthorized" | Check your API key is correct |
+| "Insufficient credits" | Check usage with `get_usage_stats` |
+| "Empty response" | The site might need JavaScript rendering |
 
-### Debug Mode
+## Need Help?
 
-Enable debug logging to troubleshoot issues:
+- 📖 [Full API Documentation](./API.md)
+- 💬 [Report Issues](https://github.com/umutc/scrapedo-mcp-server/issues)
+- 📧 [Scrapedo Support](https://scrape.do/contact)
 
-```bash
-export LOG_LEVEL="DEBUG"
-tail -f logs/scrapedo-mcp.log
-```
+## Contributing
 
-### Getting Help
+We welcome contributions! See [CONTRIBUTING.md](./CONTRIBUTING.md) for guidelines.
 
-- 📖 [API Documentation](https://scrape.do/documentation)
-- 💬 [GitHub Issues](https://github.com/umutc/scrapedo-mcp-server/issues)
-- 📧 [Support](https://scrape.do/contact)
+## License
 
-## 🤝 Contributing
-
-Contributions are welcome! Please see [CONTRIBUTING.md](CONTRIBUTING.md) for guidelines.
-
-## 📄 License
-
-MIT License - see [LICENSE](LICENSE) file for details.
-
-## 🙏 Acknowledgments
-
-- [Scrapedo](https://scrape.do) for providing the web scraping API
-- [Anthropic](https://anthropic.com) for the MCP protocol
-- The open-source community for various dependencies
+MIT - See [LICENSE](./LICENSE) file
 
 ---
 
-Made with ❤️ by [umutc](https://github.com/umutc)
+Built with ❤️ to make web scraping easy in Claude Desktop
