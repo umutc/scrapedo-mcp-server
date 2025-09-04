@@ -1,25 +1,45 @@
 {
-  "name": "@modelcontextprotocol/server-scrapedo",
-  "version": "0.1.0",
-  "description": "MCP server for Scrapedo web scraping API integration",
+  "name": "scrapedo-mcp-server",
+  "version": "1.0.0",
+  "description": "MCP server for Scrapedo web scraping API - Enable Claude Desktop to perform web scraping",
   "type": "module",
   "main": "dist/index.js",
+  "bin": {
+    "scrapedo-mcp": "./dist/cli.js"
+  },
   "scripts": {
     "start": "node dist/index.js",
     "build": "tsc",
     "dev": "tsx watch src/index.ts",
     "test": "jest",
-    "prepare": "npm run build"
+    "prepare": "npm run build",
+    "prepublishOnly": "npm run build"
   },
   "keywords": [
     "mcp",
+    "model-context-protocol",
+    "claude",
+    "claude-desktop",
     "scraping",
     "scrapedo",
     "web-scraping",
-    "proxy"
+    "proxy",
+    "api",
+    "automation"
   ],
-  "author": "",
+  "author": "umutc",
   "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/umutc/scrapedo-mcp-server.git"
+  },
+  "bugs": {
+    "url": "https://github.com/umutc/scrapedo-mcp-server/issues"
+  },
+  "homepage": "https://github.com/umutc/scrapedo-mcp-server#readme",
+  "engines": {
+    "node": ">=18.0.0"
+  },
   "dependencies": {
     "@modelcontextprotocol/sdk": "^0.6.0",
     "axios": "^1.7.9",
