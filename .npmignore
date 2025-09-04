@@ -1,0 +1,56 @@
+# Source files
+src/
+*.ts
+!dist/*.d.ts
+
+# Test files
+test-*.js
+*.test.js
+*.spec.js
+__tests__/
+coverage/
+
+# Development files
+.env
+.env.local
+.env.example
+*.log
+logs/
+.vscode/
+.idea/
+.DS_Store
+
+# Documentation source files
+docs/
+examples/
+
+# Git files
+.git/
+.gitignore
+.github/
+
+# Build files
+tsconfig.json
+jest.config.js
+.eslintrc*
+.prettierrc*
+
+# CI/CD
+.travis.yml
+.gitlab-ci.yml
+azure-pipelines.yml
+
+# Temporary files
+tmp/
+temp/
+*.tmp
+*.temp
+
+# Editor files
+*.swp
+*.swo
+*~
+
+# OS files
+Thumbs.db
+desktop.ini
