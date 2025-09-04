@@ -33,7 +33,32 @@ A comprehensive MCP (Model Context Protocol) server that provides web scraping c
 - npm or yarn
 - Scrapedo API key ([Get one here](https://scrape.do))
 
-### Quick Start
+### Quick Start with npx (Recommended)
+
+The easiest way to use this MCP server is with npx:
+
+```bash
+# Initialize Claude Desktop configuration
+npx scrapedo-mcp-server init
+
+# Or manually start the server
+SCRAPEDO_API_KEY="your_api_key_here" npx scrapedo-mcp-server start
+```
+
+### Install from npm
+
+```bash
+# Install globally
+npm install -g scrapedo-mcp-server
+
+# Initialize configuration
+scrapedo-mcp init
+
+# Start the server
+SCRAPEDO_API_KEY="your_api_key_here" scrapedo-mcp start
+```
+
+### Install from Source
 
 ```bash
 # Clone the repository
@@ -104,17 +129,34 @@ export LOG_LEVEL="DEBUG"  # DEBUG | INFO | WARN | ERROR
 
 ## 🤖 Usage with Claude Desktop
 
-### macOS Configuration
-Add to your Claude Desktop configuration:
+### Automatic Configuration (Recommended)
 
+Use the CLI tool to automatically configure Claude Desktop:
+
+```bash
+# Using npx (no installation required)
+npx scrapedo-mcp-server init
+
+# Or if installed globally
+scrapedo-mcp init
+```
+
+This will:
+1. Detect your Claude Desktop configuration file
+2. Add the Scrapedo MCP server configuration
+3. Prompt you to add your API key
+
+### Manual Configuration
+
+#### macOS Configuration
 **File location**: `~/Library/Application Support/Claude/claude_desktop_config.json`
 
 ```json
 {
   "mcpServers": {
     "scrapedo": {
-      "command": "node",
-      "args": ["/absolute/path/to/scrapedo-mcp-server/dist/index.js"],
+      "command": "npx",
+      "args": ["scrapedo-mcp-server", "start"],
       "env": {
         "SCRAPEDO_API_KEY": "your_api_key_here",
         "LOG_LEVEL": "INFO"
@@ -124,15 +166,15 @@ Add to your Claude Desktop configuration:
 }
 ```
 
-### Windows Configuration
+#### Windows Configuration
 **File location**: `%APPDATA%\Claude\claude_desktop_config.json`
 
 ```json
 {
   "mcpServers": {
     "scrapedo": {
-      "command": "node",
-      "args": ["C:\\path\\to\\scrapedo-mcp-server\\dist\\index.js"],
+      "command": "npx",
+      "args": ["scrapedo-mcp-server", "start"],
       "env": {
         "SCRAPEDO_API_KEY": "your_api_key_here",
         "LOG_LEVEL": "INFO"
@@ -143,6 +185,22 @@ Add to your Claude Desktop configuration:
 ```
 
 After updating the configuration, restart Claude Desktop for the changes to take effect.
+
+### CLI Commands
+
+```bash
+# Initialize Claude Desktop configuration
+npx scrapedo-mcp-server init
+
+# Show current configuration
+npx scrapedo-mcp-server config
+
+# Start server manually (for testing)
+SCRAPEDO_API_KEY="your_key" npx scrapedo-mcp-server start
+
+# Show help
+npx scrapedo-mcp-server help
+```
 
 ## 🛠️ Available Tools
 
