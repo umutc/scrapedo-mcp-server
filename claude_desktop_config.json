@@ -1,0 +1,12 @@
+{
+  "mcpServers": {
+    "scrapedo": {
+      "command": "node",
+      "args": ["/Users/umutc/code/upwork/chip/scrapedo-mcp-server2/dist/index.js"],
+      "env": {
+        "SCRAPEDO_API_KEY": "b1bc959fc23b4681a7328f78a081024e38c1e8cbddc",
+        "LOG_LEVEL": "INFO"
+      }
+    }
+  }
+}
