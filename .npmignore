@@ -1,7 +1,7 @@
-# Source files
+# Source files (except dist)
 src/
 *.ts
-!dist/*.d.ts
+!dist/**/*.d.ts
 
 # Test files
 test-*.js
@@ -20,9 +20,11 @@ logs/
 .idea/
 .DS_Store
 
-# Documentation source files
+# Documentation source files  
 docs/
 examples/
+IMPLEMENTATION_SUMMARY.md
+claude_desktop_config.json
 
 # Git files
 .git/
@@ -54,3 +56,6 @@ temp/
 # OS files
 Thumbs.db
 desktop.ini
+
+# Code directory (Claude Code specific)
+.code/
