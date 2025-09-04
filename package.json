@@ -1,6 +1,6 @@
 {
   "name": "scrapedo-mcp-server",
-  "version": "1.0.0",
+  "version": "1.0.1",
   "description": "MCP server for Scrapedo web scraping API - Enable Claude Desktop to perform web scraping",
   "type": "module",
   "main": "dist/index.js",
