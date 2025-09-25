@@ -18,7 +18,7 @@ Usage: npx scrapedo-mcp-server [command]
 
 Commands:
   start              Start the MCP server
-  init               Initialize Claude Desktop configuration
+  init               Initialize Claude Desktop and Codex configuration
   config             Show current configuration
   help               Show this help message
 
@@ -30,7 +30,7 @@ Examples:
   # Start the server
   SCRAPEDO_API_KEY=your_key npx scrapedo-mcp-server start
   
-  # Initialize Claude Desktop config
+  # Initialize Claude Desktop and Codex config
   npx scrapedo-mcp-server init
   
   # Show configuration
@@ -40,7 +40,7 @@ Examples:
 
 function getClaudeConfigPath() {
     const platform = process.platform;
-    
+
     if (platform === 'darwin') {
         // macOS
         return join(homedir(), 'Library', 'Application Support', 'Claude', 'claude_desktop_config.json');
@@ -53,7 +53,11 @@ function getClaudeConfigPath() {
     }
 }
 
-function initClaudeConfig() {
+function getCodexConfigPath() {
+    return join(homedir(), '.codex', 'config.toml');
+}
+
+async function initClaudeConfig() {
     const configPath = getClaudeConfigPath();
     const configDir = dirname(configPath);
     
@@ -92,9 +96,9 @@ function initClaudeConfig() {
             output: process.stdout
         });
         
-        readline.question('\nDo you want to update the configuration? (y/N): ', (answer: string) => {
+        readline.question('\nDo you want to update the configuration? (y/N): ', async (answer: string) => {
             if (answer.toLowerCase() === 'y') {
-                updateConfig(config, configPath);
+                await updateConfig(config, configPath);
             } else {
                 console.log('\n✨ Configuration unchanged');
                 process.exit(0);
@@ -102,56 +106,203 @@ function initClaudeConfig() {
             readline.close();
         });
     } else {
-        updateConfig(config, configPath);
+        await updateConfig(config, configPath);
     }
 }
 
 function updateConfig(config: any, configPath: string) {
     const serverPath = join(__dirname, 'index.js');
-    
+
+    let apiKey = process.env.SCRAPEDO_API_KEY;
+
+    if (!apiKey) {
+        const readline = createInterface({
+            input: process.stdin,
+            output: process.stdout
+        });
+
+        return new Promise<void>((resolve) => {
+            readline.question('\n🔑 Enter your Scrapedo API key (get it from https://scrape.do): ', (key: string) => {
+                apiKey = key.trim();
+                readline.close();
+
+                if (!apiKey) {
+                    console.log('❌ API key is required for configuration');
+                    resolve();
+                    return;
+                }
+
+                writeClaudeConfig(config, configPath, serverPath, apiKey);
+                resolve();
+            });
+        });
+    } else {
+        writeClaudeConfig(config, configPath, serverPath, apiKey);
+    }
+}
+
+function writeClaudeConfig(config: any, configPath: string, serverPath: string, apiKey: string) {
     // Add scrapedo server configuration
     config.mcpServers.scrapedo = {
         command: 'node',
         args: [serverPath],
         env: {
-            SCRAPEDO_API_KEY: process.env.SCRAPEDO_API_KEY || 'your_api_key_here',
+            SCRAPEDO_API_KEY: apiKey,
             LOG_LEVEL: process.env.LOG_LEVEL || 'INFO'
         }
     };
-    
+
     // Write config file
     writeFileSync(configPath, JSON.stringify(config, null, 2));
-    
+
     console.log('\n✅ Claude Desktop configuration updated successfully!');
     console.log(`\n📁 Configuration file: ${configPath}`);
-    console.log('\n⚠️  Important: Please update the SCRAPEDO_API_KEY in the configuration file');
-    console.log('    You can get your API key from: https://scrape.do');
     console.log('\n🔄 Restart Claude Desktop for the changes to take effect');
 }
 
-function showConfig() {
-    const configPath = getClaudeConfigPath();
-    
-    if (!existsSync(configPath)) {
-        console.log('❌ Claude Desktop configuration not found');
-        console.log('   Run "npx scrapedo-mcp-server init" to create it');
+function initCodexConfig() {
+    const configPath = getCodexConfigPath();
+    const configDir = dirname(configPath);
+
+    // Ensure config directory exists
+    if (!existsSync(configDir)) {
+        mkdirSync(configDir, { recursive: true });
+    }
+
+    let content = '';
+    let hasScrapedoConfig = false;
+
+    // Read existing config if it exists
+    if (existsSync(configPath)) {
+        try {
+            content = readFileSync(configPath, 'utf-8');
+            hasScrapedoConfig = content.includes('[mcp_servers.scrapedo]');
+            console.log('📖 Found existing Codex configuration');
+        } catch (error) {
+            console.error('⚠️  Error reading existing Codex config, creating new one');
+            content = '';
+        }
+    }
+
+    if (hasScrapedoConfig) {
+        console.log('✅ Scrapedo MCP server is already configured in Codex!');
         return;
     }
-    
+
+    // Get API key from user
+    let apiKey = process.env.SCRAPEDO_API_KEY;
+
+    if (!apiKey) {
+        const readline = createInterface({
+            input: process.stdin,
+            output: process.stdout
+        });
+
+        return new Promise<void>((resolve) => {
+            readline.question('\n🔑 Enter your Scrapedo API key (get it from https://scrape.do): ', (key: string) => {
+                apiKey = key.trim();
+                readline.close();
+
+                if (!apiKey) {
+                    console.log('❌ API key is required for configuration');
+                    resolve();
+                    return;
+                }
+
+                writeCodexConfig(content, configPath, apiKey);
+                resolve();
+            });
+        });
+    } else {
+        writeCodexConfig(content, configPath, apiKey);
+    }
+}
+
+function writeCodexConfig(content: string, configPath: string, apiKey: string) {
+    // Add Scrapedo configuration to the TOML file
+    const scrapedoConfig = `
+
+[mcp_servers.scrapedo]
+command = "npx"
+args = ["scrapedo-mcp-server", "start"]
+env = { "SCRAPEDO_API_KEY" = "${apiKey}" }
+startup_timeout_sec = 10
+tool_timeout_sec = 60
+`;
+
+    content += scrapedoConfig;
+
     try {
-        const content = readFileSync(configPath, 'utf-8');
-        const config = JSON.parse(content);
-        
-        if (config.mcpServers?.scrapedo) {
-            console.log('📋 Scrapedo MCP Server Configuration:\n');
-            console.log(JSON.stringify(config.mcpServers.scrapedo, null, 2));
-            console.log(`\n📁 Config location: ${configPath}`);
-        } else {
-            console.log('❌ Scrapedo MCP server not configured');
-            console.log('   Run "npx scrapedo-mcp-server init" to configure it');
-        }
+        writeFileSync(configPath, content);
+        console.log('✅ Successfully configured Scrapedo MCP server for Codex!');
+        console.log(`📁 Config location: ${configPath}`);
+        console.log('\n🔄 Restart Codex to load the new configuration');
     } catch (error) {
-        console.error('❌ Error reading configuration:', error);
+        console.error('❌ Error writing Codex configuration:', error);
+    }
+}
+
+function showConfig() {
+    const claudeConfigPath = getClaudeConfigPath();
+    const codexConfigPath = getCodexConfigPath();
+
+    console.log('📋 Scrapedo MCP Server Configuration Status:\n');
+
+    // Check Claude Desktop
+    let claudeConfigured = false;
+    console.log('🖥️  Claude Desktop:');
+    if (existsSync(claudeConfigPath)) {
+        try {
+            const content = readFileSync(claudeConfigPath, 'utf-8');
+            const config = JSON.parse(content);
+
+            if (config.mcpServers?.scrapedo) {
+                console.log('   ✅ Configured');
+                console.log(`   📁 ${claudeConfigPath}`);
+                claudeConfigured = true;
+            } else {
+                console.log('   ❌ MCP server not configured in existing config');
+            }
+        } catch (error) {
+            console.log('   ❌ Error reading configuration file');
+        }
+    } else {
+        console.log('   ❌ Configuration file not found');
+    }
+
+    console.log('');
+
+    // Check Codex
+    let codexConfigured = false;
+    console.log('⚡ Codex:');
+    if (existsSync(codexConfigPath)) {
+        try {
+            const content = readFileSync(codexConfigPath, 'utf-8');
+            if (content.includes('[mcp_servers.scrapedo]')) {
+                console.log('   ✅ Configured');
+                console.log(`   📁 ${codexConfigPath}`);
+                codexConfigured = true;
+            } else {
+                console.log('   ❌ MCP server not configured in existing config');
+            }
+        } catch (error) {
+            console.log('   ❌ Error reading configuration file');
+        }
+    } else {
+        console.log('   ❌ Configuration file not found');
+    }
+
+    console.log('');
+
+    if (!claudeConfigured && !codexConfigured) {
+        console.log('💡 Run "npx scrapedo-mcp-server init" to configure both platforms');
+    } else if (!claudeConfigured) {
+        console.log('💡 Run "npx scrapedo-mcp-server init" to configure Claude Desktop');
+    } else if (!codexConfigured) {
+        console.log('💡 Run "npx scrapedo-mcp-server init" to configure Codex');
+    } else {
+        console.log('🎉 Both platforms are configured!');
+        console.log('💡 Remember to restart the applications to load changes');
     }
 }
 
@@ -190,27 +341,39 @@ function startServer() {
 }
 
 // Main CLI logic
-const command = process.argv[2];
+async function runCli() {
+    const command = process.argv[2];
 
-switch (command) {
-    case 'start':
-        startServer();
-        break;
-    case 'init':
-        initClaudeConfig();
-        break;
-    case 'config':
-        showConfig();
-        break;
-    case 'help':
-    case '--help':
-    case '-h':
-        printUsage();
-        break;
-    default:
-        if (command) {
-            console.error(`❌ Unknown command: ${command}\n`);
-        }
-        printUsage();
-        process.exit(command ? 1 : 0);
+    switch (command) {
+        case 'start':
+            startServer();
+            break;
+        case 'init':
+            console.log('🚀 Initializing Scrapedo MCP Server for both Claude Desktop and Codex...\n');
+
+            console.log('⚙️  Configuring Claude Desktop...');
+            await initClaudeConfig();
+
+            console.log('\n⚙️  Configuring Codex...');
+            await initCodexConfig();
+
+            console.log('\n🎉 Configuration complete! Both platforms are now configured.');
+            break;
+        case 'config':
+            showConfig();
+            break;
+        case 'help':
+        case '--help':
+        case '-h':
+            printUsage();
+            break;
+        default:
+            if (command) {
+                console.error(`❌ Unknown command: ${command}\n`);
+            }
+            printUsage();
+            process.exit(command ? 1 : 0);
+    }
 }
+
+runCli().catch(console.error);
