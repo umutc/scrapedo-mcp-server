@@ -1,7 +1,7 @@
 {
   "name": "scrapedo-mcp-server",
-  "version": "1.0.3",
-  "description": "Web scraping for Claude Desktop using Scrapedo API. Simple setup with npx.",
+  "version": "1.1.0",
+  "description": "Web scraping for Claude Desktop and Codex using Scrapedo API. Simple setup with npx.",
   "type": "module",
   "main": "dist/index.js",
   "bin": {
@@ -21,6 +21,7 @@
     "model-context-protocol",
     "claude",
     "claude-desktop",
+    "codex",
     "scraping",
     "scrapedo",
     "web-scraping",
