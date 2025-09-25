@@ -5,6 +5,7 @@ import { fileURLToPath } from 'url';
 import { dirname, join } from 'path';
 import { existsSync, mkdirSync, writeFileSync, readFileSync } from 'fs';
 import { homedir } from 'os';
+import { createInterface } from 'readline';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
@@ -86,7 +87,7 @@ function initClaudeConfig() {
         console.log('\nCurrent configuration:');
         console.log(JSON.stringify(config.mcpServers.scrapedo, null, 2));
         
-        const readline = require('readline').createInterface({
+        const readline = createInterface({
             input: process.stdin,
             output: process.stdout
         });
