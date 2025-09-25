@@ -1,4 +1,5 @@
 import axios, { AxiosError, AxiosRequestConfig } from 'axios';
+import { HttpsProxyAgent } from 'https-proxy-agent';
 import { z } from 'zod';
 import { logger } from './logger.js';
 
@@ -161,7 +162,6 @@ export class ScrapedoClient {
         const { url, proxyUrl } = this.buildProxyUrl(options);
         logger.debug('Using proxy mode', { targetUrl: url, proxyUrl: proxyUrl.replace(/:[^:]+@/, ':***@') });
         
-        const HttpsProxyAgent = require('https-proxy-agent');
         const agent = new HttpsProxyAgent(proxyUrl);
         
         const config: AxiosRequestConfig = {
