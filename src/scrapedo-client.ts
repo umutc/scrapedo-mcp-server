@@ -163,8 +163,9 @@ export class ScrapedoClient {
         logger.debug('Using proxy mode', { targetUrl: url, proxyUrl: proxyUrl.replace(/:[^:]+@/, ':***@') });
 
         const agent = new HttpsProxyAgent(proxyUrl, {
-          rejectUnauthorized: false
-        });
+          rejectUnauthorized: false,
+          strictSSL: false
+        } as any);
         
         const config: AxiosRequestConfig = {
           method: options.method || 'GET',
