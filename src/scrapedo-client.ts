@@ -1,4 +1,5 @@
 import axios, { AxiosError, AxiosRequestConfig } from 'axios';
+import https from 'https';
 import { HttpsProxyAgent } from 'https-proxy-agent';
 import { z } from 'zod';
 import { logger } from './logger.js';
@@ -162,17 +163,33 @@ export class ScrapedoClient {
         const { url, proxyUrl } = this.buildProxyUrl(options);
         logger.debug('Using proxy mode', { targetUrl: url, proxyUrl: proxyUrl.replace(/:[^:]+@/, ':***@') });
 
-        const agent = new HttpsProxyAgent(proxyUrl, {
-          rejectUnauthorized: false,
-          strictSSL: false
-        } as any);
-        
+        const httpsAgent = new https.Agent({
+          rejectUnauthorized: false
+        });
+
         const config: AxiosRequestConfig = {
           method: options.method || 'GET',
           url,
-          httpsAgent: agent,
-          proxy: false,
-          headers: {},
+          httpsAgent,
+          proxy: {
+            protocol: 'http',
+            host: PROXY_URL,
+            port: PROXY_PORT,
+            auth: {
+              username: this.apiKey,
+              password: Object.entries(options)
+                .filter(([key, value]) => key !== 'url' && value !== undefined && value !== null)
+                .map(([key, value]) =>
+                  typeof value === 'boolean' ? `${key}=${value}` :
+                  typeof value === 'object' ? `${key}=${JSON.stringify(value)}` :
+                  `${key}=${value}`
+                )
+                .join('&')
+            }
+          },
+          headers: {
+            'User-Agent': 'axios/1.12.2'
+          },
           timeout: options.timeout || 60000,
           maxRedirects: options.disableRedirection ? 0 : 5,
         };
