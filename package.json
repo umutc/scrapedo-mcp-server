@@ -5,6 +5,7 @@
   "type": "module",
   "main": "dist/index.js",
   "bin": {
+    "scrapedo-mcp-server": "./dist/cli.js",
     "scrapedo-mcp": "./dist/cli.js"
   },
   "scripts": {
