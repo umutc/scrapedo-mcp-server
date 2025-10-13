@@ -3264,7 +3264,7 @@ Console.WriteLine(content);
 \`\`\`
 
 \`\`\`
-string token = "ada2f36f657e4bcf8470227cd8d4c639d549aa97127";
+string token = "YOUR_SCRAPEDO_API_KEY_HERE";
 string url = "https://httpbin.co/headers";
 var proxy = new WebProxy
 {

@@ -1,0 +1,9 @@
+# Gitleaks ignore file
+# Suppress false positives and historical leaks
+
+# Historical API key leak (already replaced with placeholder, key should be revoked)
+575bef252b4c8e46a92b4ee3f1b10df45f3fbaaf:docs/scrapedo-documentation.md:generic-api-key:3267
+
+# False positive: "disableRetry=true" is a configuration string, not a secret
+575bef252b4c8e46a92b4ee3f1b10df45f3fbaaf:docs/scrapedo-documentation.md:generic-api-key:5258
+575bef252b4c8e46a92b4ee3f1b10df45f3fbaaf:docs/scrapedo-documentation.md:generic-api-key:5287
