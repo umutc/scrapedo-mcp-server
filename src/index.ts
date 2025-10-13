@@ -13,6 +13,15 @@ import { z } from 'zod';
 import { ScrapedoClient } from './scrapedo-client.js';
 import * as tools from './tools/index.js';
 import { logger } from './logger.js';
+import { readFileSync } from 'fs';
+import { fileURLToPath } from 'url';
+import { dirname, join } from 'path';
+
+// Get version from package.json
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = dirname(__filename);
+const packageJson = JSON.parse(readFileSync(join(__dirname, '../package.json'), 'utf-8'));
+const VERSION = packageJson.version;
 
 const API_KEY = process.env.SCRAPEDO_API_KEY;
 
@@ -32,7 +41,7 @@ const client = new ScrapedoClient(API_KEY);
 const server = new Server(
   {
     name: 'scrapedo-server',
-    version: '0.1.0',
+    version: VERSION,
   },
   {
     capabilities: {
@@ -118,16 +127,23 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
 
 async function main() {
   const transport = new StdioServerTransport();
-  
-  logger.info('Connecting MCP server to stdio transport');
+
+  // Display startup banner
+  console.error('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━');
+  console.error(`  Scrapedo MCP Server v${VERSION}`);
+  console.error('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━');
+  console.error(`  Tools: ${availableTools.length} available`);
+  console.error(`  Transport: stdio`);
+  console.error('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n');
+
+  logger.info(`Connecting MCP server v${VERSION} to stdio transport`);
   await server.connect(transport);
-  
+
   logger.info('Scrapedo MCP server is running', {
+    version: VERSION,
     tools: availableTools.map(t => t.name),
     transport: 'stdio'
   });
-  
-  console.error('Scrapedo MCP server running on stdio');
 }
 
 main().catch((error) => {
