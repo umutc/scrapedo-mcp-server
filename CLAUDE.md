@@ -64,7 +64,7 @@ Error handling distinguishes between:
 Singleton logger that writes to both `logs/scrapedo-mcp.log` and stderr (for MCP protocol compliance).
 
 Features:
-- Log level filtering (DEBUG, INFO, WARN, ERROR) via `LOG_LEVEL` env var
+- Log level filtering (DEBUG, INFO, WARN, ERROR, NONE) via `LOG_LEVEL` env var (`NONE` disables logging)
 - Automatic sanitization of sensitive data (tokens, API keys)
 - Specialized methods: `logRequest()`, `logResponse()`, `logError()`, `logApiCall()`
 - Truncates long strings (>1000 chars) to prevent log bloat
@@ -250,7 +250,7 @@ throw new McpError(ErrorCode.InvalidParams, 'Validation failed');
 ## Environment Variables
 
 - `SCRAPEDO_API_KEY` - Required for all operations (get from scrape.do)
-- `LOG_LEVEL` - DEBUG | INFO | WARN | ERROR (default: INFO)
+- `LOG_LEVEL` - DEBUG | INFO | WARN | ERROR | NONE (default: INFO, set to `NONE` to disable logging)
 
 ## Important Notes
 

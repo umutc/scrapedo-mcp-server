@@ -10,7 +10,8 @@ export enum LogLevel {
   DEBUG = 'DEBUG',
   INFO = 'INFO',
   WARN = 'WARN',
-  ERROR = 'ERROR'
+  ERROR = 'ERROR',
+  NONE = 'NONE'
 }
 
 export class Logger {
@@ -30,7 +31,7 @@ export class Logger {
     this.logFile = path.join(logDir, logFileName);
     this.logStream = fs.createWriteStream(this.logFile, { flags: 'a' });
     this.logToConsole = logToConsole;
-    this.logLevel = (process.env.LOG_LEVEL as LogLevel) || LogLevel.INFO;
+    this.logLevel = this.resolveLogLevel(process.env.LOG_LEVEL);
     
     this.log(LogLevel.INFO, '='.repeat(80));
     this.log(LogLevel.INFO, 'Scrapedo MCP Server Started');
@@ -40,10 +41,26 @@ export class Logger {
   }
 
   private shouldLog(level: LogLevel): boolean {
+    if (this.logLevel === LogLevel.NONE || level === LogLevel.NONE) {
+      return false;
+    }
+
     const levels = [LogLevel.DEBUG, LogLevel.INFO, LogLevel.WARN, LogLevel.ERROR];
     const currentLevelIndex = levels.indexOf(this.logLevel);
     const messageLevelIndex = levels.indexOf(level);
     return messageLevelIndex >= currentLevelIndex;
+  }
+
+  private resolveLogLevel(envLevel?: string): LogLevel {
+    if (!envLevel) {
+      return LogLevel.INFO;
+    }
+
+    const normalizedLevel = envLevel.trim().toUpperCase();
+    const validLevels = Object.values(LogLevel) as string[];
+    return validLevels.includes(normalizedLevel)
+      ? (normalizedLevel as LogLevel)
+      : LogLevel.INFO;
   }
 
   private formatMessage(level: LogLevel, message: string, data?: any): string {

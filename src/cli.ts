@@ -25,7 +25,7 @@ Commands:
 
 Environment Variables:
   SCRAPEDO_API_KEY   Your Scrapedo API key (required)
-  LOG_LEVEL          Logging level (DEBUG, INFO, WARN, ERROR)
+  LOG_LEVEL          Logging level (DEBUG, INFO, WARN, ERROR, NONE)
 
 Examples:
   # Start the server

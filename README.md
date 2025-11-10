@@ -166,6 +166,9 @@ A: Yes! This works with any MCP-compatible client, not just Claude Desktop.
 **Q: How do I see debug logs?**  
 A: Set `LOG_LEVEL=DEBUG` in your environment or configuration.
 
+**Q: How do I disable logging?**  
+A: Set `LOG_LEVEL=NONE` to stop writing logs entirely.
+
 ## Troubleshooting
 
 | Issue | Solution |
