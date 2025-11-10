@@ -148,19 +148,21 @@ export class ScrapedoClient {
   }
 
   async scrape(options: ScrapeOptions, useProxy = false): Promise<ScrapeResult> {
+    const normalizedOptions = this.applyDefaultRegion(options);
+    
     logger.debug('Starting scrape request', {
-      url: options.url,
+      url: normalizedOptions.url,
       useProxy,
-      render: options.render,
-      super: options.super,
-      device: options.device
+      render: normalizedOptions.render,
+      super: normalizedOptions.super,
+      device: normalizedOptions.device
     });
 
     try {
       let response;
       
       if (useProxy) {
-        const { url, proxyUrl } = this.buildProxyUrl(options);
+        const { url, proxyUrl } = this.buildProxyUrl(normalizedOptions);
         logger.debug('Using proxy mode', { targetUrl: url, proxyUrl: proxyUrl.replace(/:[^:]+@/, ':***@') });
 
         const httpsAgent = new https.Agent({
@@ -168,7 +170,7 @@ export class ScrapedoClient {
         });
 
         const config: AxiosRequestConfig = {
-          method: options.method || 'GET',
+          method: normalizedOptions.method || 'GET',
           url,
           httpsAgent,
           proxy: {
@@ -177,7 +179,7 @@ export class ScrapedoClient {
             port: PROXY_PORT,
             auth: {
               username: this.apiKey,
-              password: Object.entries(options)
+              password: Object.entries(normalizedOptions)
                 .filter(([key, value]) => key !== 'url' && value !== undefined && value !== null)
                 .map(([key, value]) =>
                   typeof value === 'boolean' ? `${key}=${value}` :
@@ -190,12 +192,12 @@ export class ScrapedoClient {
           headers: {
             'User-Agent': 'axios/1.12.2'
           },
-          timeout: options.timeout || 60000,
-          maxRedirects: options.disableRedirection ? 0 : 5,
+          timeout: normalizedOptions.timeout || 60000,
+          maxRedirects: normalizedOptions.disableRedirection ? 0 : 5,
         };
 
-        if (options.body) {
-          config.data = options.body;
+        if (normalizedOptions.body) {
+          config.data = normalizedOptions.body;
         }
 
         logger.logApiCall(config.method || 'GET', url, { proxy: 'configured' });
@@ -205,18 +207,18 @@ export class ScrapedoClient {
           dataLength: response.data?.length 
         });
       } else {
-        const url = this.buildApiUrl(options);
+        const url = this.buildApiUrl(normalizedOptions);
         logger.debug('Using API mode', { url: url.replace(/token=[^&]+/, 'token=***') });
         
         const config = {
-          method: options.method || 'GET',
+          method: normalizedOptions.method || 'GET',
           url,
-          data: options.body,
-          timeout: options.timeout || 60000,
-          maxRedirects: options.disableRedirection ? 0 : 5,
+          data: normalizedOptions.body,
+          timeout: normalizedOptions.timeout || 60000,
+          maxRedirects: normalizedOptions.disableRedirection ? 0 : 5,
         };
         
-        logger.logApiCall(config.method, url, { body: options.body });
+        logger.logApiCall(config.method, url, { body: normalizedOptions.body });
         response = await axios(config);
         logger.logApiResponse(config.method, url, response.status, {
           headers: response.headers,
@@ -224,7 +226,7 @@ export class ScrapedoClient {
         });
       }
 
-      const result = this.processResponse(response, options);
+      const result = this.processResponse(response, normalizedOptions);
       logger.debug('Scrape completed successfully', {
         statusCode: result.statusCode,
         hasHtml: !!result.html,
@@ -361,22 +363,10 @@ export class ScrapedoClient {
     return credits;
   }
 
-  generateProxyConfig(params: Omit<ScrapeOptions, 'url'>): string {
-    const proxyParams = new URLSearchParams();
-    
-    Object.entries(params).forEach(([key, value]) => {
-      if (value !== undefined && value !== null) {
-        if (typeof value === 'boolean') {
-          proxyParams.append(key, value.toString());
-        } else if (key === 'playWithBrowser' && typeof value === 'object') {
-          proxyParams.append(key, JSON.stringify(value));
-        } else {
-          proxyParams.append(key, String(value));
-        }
-      }
-    });
-
-    const proxyAuth = proxyParams.toString() ? `${this.apiKey}:${proxyParams.toString()}` : this.apiKey;
-    return `http://${proxyAuth}@${PROXY_URL}:${PROXY_PORT}`;
+  private applyDefaultRegion(options: ScrapeOptions): ScrapeOptions {
+    if (options.super && !options.geoCode && !options.regionalGeoCode) {
+      return { ...options, geoCode: 'us' };
+    }
+    return options;
   }
 }

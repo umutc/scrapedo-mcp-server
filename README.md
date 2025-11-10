@@ -103,11 +103,37 @@ take_screenshot("https://example.com", {
 })
 ```
 
-### Use Proxies
+### Residential & Mobile Proxies
 ```javascript
-// Scrape from different locations:
-scrape_with_proxy("https://example.com", {
-  geoCode: "us"  // Use US proxy
+// Super requests with geo-targeting:
+scrape("https://example.com", {
+  super: true,     // Switch to residential & mobile pool
+  geoCode: "us",   // Country code (defaults to "us" if omitted)
+  sessionId: 42    // Optional sticky session
+})
+```
+
+### Play with Browser Actions
+```javascript
+scrape_with_js("https://app.example.com", {
+  playWithBrowser: JSON.stringify([
+    { action: "wait", selector: ".cookie-banner", timeout: 2000 },
+    { action: "click", selector: ".accept" },
+    { action: "type", selector: "#search", value: "gaming laptop" },
+    { action: "press", key: "Enter" },
+    { action: "wait", selector: ".results" }
+  ])
+})
+```
+
+### Screenshots & Async Callbacks
+```javascript
+scrape_with_js("https://example.com/product", {
+  screenShot: true,          // or fullScreenShot / particularScreenShot
+  returnJSON: true,          // enforced automatically when screenshot flags are set
+  callback: encodeURI("https://webhook.site/your-endpoint"),
+  customHeaders: false,      // override Scrape.do default headers
+  forwardHeaders: true
 })
 ```
 
@@ -116,6 +142,12 @@ scrape_with_proxy("https://example.com", {
 // Get clean, readable content:
 scrape_to_markdown("https://blog.example.com/article")
 ```
+
+### Advanced Controls
+- Toggle headers/cookies: `customHeaders`, `extraHeaders`, `forwardHeaders`, `setCookies`, `pureCookies`
+- Switch response modes: `transparentResponse`, `returnJSON`, `showFrames`, `showWebsocketRequests`, `output: 'markdown'`
+- Combine screenshots with scraping by setting `screenShot`, `fullScreenShot`, or `particularScreenShot` (only one at a time; automatically forces `render` + `returnJSON`)
+- Receive results later via `callback` webhooks (Scrape.do posts JSON payloads to the provided URL)
 
 ## Project Structure
 
@@ -132,11 +164,14 @@ scrapedo-mcp-server/
 
 ## API Costs
 
-Scrapedo uses a credit system:
-- **Basic scraping**: 1 credit
-- **JavaScript rendering**: 5 credits
-- **Residential proxy**: 10 credits
-- **Residential + JS**: 25 credits
+Scrapedo charges credits per request type:
+
+| Features | Credits Usage |
+|----------|---------------|
+| Normal Request (Datacenter) | 1 |
+| Datacenter + Headless Browser (JS Render) | 5 |
+| Residential & Mobile Request (`super: true`) | 10 |
+| Residential & Mobile Request + Headless Browser | 25 |
 
 Check your usage anytime by asking Claude: "Check my Scrapedo usage stats"
 

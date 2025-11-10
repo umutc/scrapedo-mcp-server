@@ -24,7 +24,6 @@ describe('Screenshot Tool', () => {
       scrape: jest.fn().mockResolvedValue(mockResult),
       getUsageStats: jest.fn(),
       calculateCredits: jest.fn(),
-      generateProxyConfig: jest.fn(),
     } as any;
   });
 
@@ -65,6 +64,15 @@ describe('Screenshot Tool', () => {
       expect(device.enum).toContain('desktop');
       expect(device.enum).toContain('mobile');
       expect(device.enum).toContain('tablet');
+    });
+
+    it('should expose proxy, header, and callback controls', () => {
+      const props = takeScreenshotTool.inputSchema.properties as any;
+      expect(props.super).toBeDefined();
+      expect(props.geoCode).toBeDefined();
+      expect(props.customHeaders).toBeDefined();
+      expect(props.setCookies).toBeDefined();
+      expect(props.callback).toBeDefined();
     });
   });
 
@@ -237,19 +245,26 @@ describe('Screenshot Tool', () => {
       );
     });
 
-    it('should prioritize selector over fullPage', async () => {
+    it('should reject when both fullPage and selector provided', async () => {
       const args = {
         url: 'https://example.com',
         fullPage: true,
         selector: '.header',
       };
 
-      await handleTakeScreenshot(mockClient, args);
+      await expect(handleTakeScreenshot(mockClient, args)).rejects.toThrow(
+        'either fullPage or selector'
+      );
+    });
 
-      const callArgs = mockClient.scrape.mock.calls[0][0];
-      expect(callArgs.screenShot).toBe(false);
-      expect(callArgs.particularScreenShot).toBe('.header');
-      expect(callArgs.render).toBe(true);
+    it('should include callback note when callback present', async () => {
+      const args = { url: 'https://example.com', callback: 'https://hook.test' };
+
+      const result = await handleTakeScreenshot(mockClient, args);
+
+      expect(result.content).toHaveLength(2);
+      expect(result.content[1].text).toContain('Callback registered');
+      expect(result.content[1].text).toContain('https://hook.test');
     });
   });
 });

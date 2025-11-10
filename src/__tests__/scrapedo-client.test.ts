@@ -185,6 +185,24 @@ describe('ScrapedoClient', () => {
         })
       );
     });
+
+    it('should default geoCode to us when super traffic has no region', async () => {
+      const mockResponse = {
+        status: 200,
+        data: '<html>Default region content</html>',
+        headers: {},
+      };
+
+      mockAxios.mockResolvedValue(mockResponse);
+
+      await client.scrape({
+        url: 'https://example.com',
+        super: true,
+      });
+
+      const requestConfig = mockAxios.mock.calls[0][0];
+      expect(requestConfig.url).toContain('geoCode=us');
+    });
   });
 
   describe('error handling', () => {
@@ -360,38 +378,6 @@ describe('ScrapedoClient', () => {
         super: true,
       });
       expect(credits).toBe(30); // LinkedIn minimum is 30, which is higher than 25
-    });
-  });
-
-  describe('generateProxyConfig', () => {
-    it('should generate proxy config without parameters', () => {
-      const proxyUrl = client.generateProxyConfig({});
-      expect(proxyUrl).toContain('proxy.scrape.do:8080');
-      expect(proxyUrl).toContain(mockApiKey);
-    });
-
-    it('should generate proxy config with render parameter', () => {
-      const proxyUrl = client.generateProxyConfig({ render: true });
-      expect(proxyUrl).toContain('render=true');
-    });
-
-    it('should generate proxy config with multiple parameters', () => {
-      const proxyUrl = client.generateProxyConfig({
-        render: true,
-        geoCode: 'us',
-        device: 'mobile',
-      });
-      expect(proxyUrl).toContain('render=true');
-      expect(proxyUrl).toContain('geoCode=us');
-      expect(proxyUrl).toContain('device=mobile');
-    });
-
-    it('should handle playWithBrowser object parameter', () => {
-      const proxyUrl = client.generateProxyConfig({
-        playWithBrowser: [{ action: 'click', selector: '#button' }],
-      });
-      expect(proxyUrl).toContain('playWithBrowser');
-      expect(proxyUrl).toContain('click');
     });
   });
 

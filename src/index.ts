@@ -53,11 +53,9 @@ const server = new Server(
 const availableTools: Tool[] = [
   tools.scrapeTool,
   tools.scrapeWithJsTool,
-  tools.scrapeWithProxyTool,
   tools.takeScreenshotTool,
   tools.scrapeToMarkdownTool,
   tools.getUsageStatsTool,
-  tools.generateProxyConfigTool,
 ];
 
 server.setRequestHandler(ListToolsRequestSchema, async () => {
@@ -80,9 +78,6 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
       case 'scrape_with_js':
         result = await tools.handleScrapeWithJs(client, args);
         break;
-      case 'scrape_with_proxy':
-        result = await tools.handleScrapeWithProxy(client, args);
-        break;
       case 'take_screenshot':
         result = await tools.handleTakeScreenshot(client, args);
         break;
@@ -91,9 +86,6 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
         break;
       case 'get_usage_stats':
         result = await tools.handleGetUsageStats(client, args);
-        break;
-      case 'generate_proxy_config':
-        result = await tools.handleGenerateProxyConfig(client, args);
         break;
       default:
         throw new McpError(

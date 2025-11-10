@@ -434,27 +434,15 @@ function convertActions(actions: UserAction[]): BrowserAction[] {
 ### Track 5: Proxy & Geographic Tools
 **Agent: proxy-geo-agent**
 
-#### Tool: scrape_with_proxy
-**File**: `src/tools/scraping/proxy-super.ts`
-```typescript
-{
-  name: 'scrape_with_proxy',
-  description: 'Use residential/mobile proxy networks',
-  inputSchema: {
-    type: 'object',
-    properties: {
-      url: { type: 'string' },
-      geoCode: { 
-        type: 'string',
-        enum: ['us', 'uk', 'ca', 'au', 'de', 'fr', 'it', 'es', 'jp', 'br', 'in', 'sg', ...]
-      },
-      sessionId: { type: 'number', description: 'Sticky session ID' },
-      super: { type: 'boolean', default: true }
-    },
-    required: ['url']
-  }
-}
-```
+#### Proxy parameters in core tools
+**Status**: Complete
+
+Residential & mobile proxy controls (`super`, `geoCode`, `regionalGeoCode`, `sessionId`) now live directly on the standard `scrape` and `scrape_with_js` tools so clients can request Super traffic without a separate MCP tool. This keeps the surface area small while still advertising the parameters via the shared JSON schema.
+
+#### Advanced scrape controls (headers/screenshots/callbacks)
+**Status**: Complete
+
+Tool schemas now surface Scrape.do’s advanced flags: header/cookie toggles (`customHeaders`, `extraHeaders`, `forwardHeaders`, `setCookies`, `pureCookies`), asynchronous `callback` delivery, Play-with-Browser scripts, screenshot modes (`screenShot`, `fullScreenShot`, `particularScreenShot`), and JSON/transparent output selectors. MCP validates the documented constraints (single screenshot flag, no screenshot + Play-with-Browser, screenshot prerequisite flags) before requests leave the server.
 
 #### Tool: scrape_with_location
 **File**: `src/tools/scraping/geolocation.ts`
@@ -664,20 +652,7 @@ async function handler(): Promise<UsageStats> {
 
 #### Tool: generate_proxy_config
 **File**: `src/tools/utility/generate-proxy-config.ts`
-```typescript
-{
-  name: 'generate_proxy_config',
-  description: 'Return a ready-to-use Proxy Mode URL with embedded parameters',
-  inputSchema: {
-    type: 'object',
-    properties: {
-      params: { type: 'object', description: 'Scrape.do parameters for proxy password' }
-    }
-  }
-}
-
-// Returns: { proxyUrl: string }
-```
+> _Update_: The standalone `generate_proxy_config` helper has been removed. Proxy-mode URLs are no longer exposed over MCP since clients can hit the Scrape.do API directly with `super` parameters. This simplifies maintenance and keeps credentials within the standard scraping tools.
 
 ---
 
@@ -822,7 +797,7 @@ cp .env.example .env
 - `take_screenshot` - Capture screenshots
 
 ### Advanced Features
-- `scrape_with_proxy` - Residential/mobile proxies
+- `scrape` + `super: true` - Residential/mobile proxies
 - `scrape_with_location` - Geographic targeting
 - `scrape_batch` - Multiple URLs
 - `scrape_async` - Webhook callbacks
@@ -837,7 +812,7 @@ cp .env.example .env
 - Residential + JS: 25 credits
 
 ### Proxy Mode Defaults
-- Proxy Mode enables `customHeaders=true` by default per Scrape.do docs. Explicitly pass `customHeaders=false` to disable.
+- Super requests (`super: true`) enable Scrape.do's residential/mobile pool. Adjust `customHeaders` explicitly if you need to override the API defaults.
 
 ### Cookies
 - `setCookies` accepts URL-encoded cookies. The `scrape_with_cookies` tool converts `{k:v}` to the required header string and can set `pureCookies=true` to return original `Set-Cookie` headers.
@@ -941,4 +916,4 @@ cp .env.example .env
 
 ## Notes on Proxy Mode Implementation
 - For Proxy Mode (`TOKEN:params@proxy.scrape.do:8080`), configure an HTTP/HTTPS proxy agent (e.g., `http-proxy-agent`/`https-proxy-agent`) instead of relying on axios defaults. Build the proxy password string from Scrape.do parameters (e.g., `render=true&waitUntil=domcontentloaded`).
-- If full in-process proxying is out of scope for the MCP server, expose a `generate_proxy_config` utility tool that returns a ready-to-use proxy URL for clients.
+- If full in-process proxying is out of scope for the MCP server, rely on the `super` parameters within `scrape`/`scrape_with_js` instead of a dedicated `generate_proxy_config` tool (now deprecated).

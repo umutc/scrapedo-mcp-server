@@ -21,7 +21,6 @@ describe('Output Format Tool', () => {
       scrape: jest.fn().mockResolvedValue(mockResult),
       getUsageStats: jest.fn(),
       calculateCredits: jest.fn(),
-      generateProxyConfig: jest.fn(),
     } as any;
   });
 
@@ -218,6 +217,16 @@ const foo = 'bar';
         })
       );
       expect(result.content[0].text).toBeTruthy();
+    });
+
+    it('should append callback note when callback URL provided', async () => {
+      const args = { url: 'https://example.com', callback: 'https://webhook.test' };
+
+      const result = await handleScrapeToMarkdown(mockClient, args);
+
+      expect(result.content).toHaveLength(2);
+      expect(result.content[1].text).toContain('Callback registered');
+      expect(result.content[1].text).toContain('https://webhook.test');
     });
   });
 });

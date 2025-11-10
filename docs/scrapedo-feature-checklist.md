@@ -132,9 +132,10 @@ This document verifies that ALL features from https://scrape.do/documentation/ a
 ### Browser Tools
 - [x] `browser_automate` - Complex browser actions
 - [x] `take_screenshot` - Screenshot capture
+- [x] Play-with-Browser scripts (`playWithBrowser` parameter on `scrape_with_js`)
 
 ### Proxy & Geo Tools
-- [x] `scrape_with_proxy` - Residential/mobile proxy
+- [x] `scrape` + `super` params - Residential/mobile proxy
 - [x] `scrape_with_location` - Geographic targeting
 
 ### Header Tools
@@ -152,6 +153,7 @@ This document verifies that ALL features from https://scrape.do/documentation/ a
 
 ### Utility Tools
 - [x] `get_usage_stats` - API usage statistics
+- [x] `callback` webhook delivery (available on scraping tools)
 
 ## ✅ Advanced Features
 
